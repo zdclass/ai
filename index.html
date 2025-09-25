@@ -94,8 +94,8 @@
                             <textarea id="s1_quote" class="w-full mt-2 p-3 border rounded-lg h-28 bg-slate-50 focus:ring-2 focus:ring-sky-400" placeholder="我最喜歡的名言是... 因為..."></textarea>
                         </div>
                         <div>
-                            <label class="font-semibold block mb-2 text-lg">打造你的專屬論點！</label>
-                            <p class="text-sm text-slate-500 mb-2">結合你的想法和名言，用一個完整的句子寫下你的核心論點。</p>
+                            <label class="font-semibold block mb-2 text-lg">打造你的專屬論点！</label>
+                            <p class="text-sm text-slate-500 mb-2">結合你的想法和名言，用一個完整的句子寫下你的核心論点。</p>
                             <textarea id="s1_thesis" class="w-full p-3 border rounded-lg h-28 bg-slate-50 focus:ring-2 focus:ring-sky-400" placeholder="俗話說：「...」，我認為合作是..."></textarea>
                         </div>
                     </div>
@@ -187,7 +187,13 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- IMPORTANT: PASTE YOUR GOOGLE AI STUDIO API KEY HERE ---
+        // 1. Go to Google AI Studio: https://aistudio.google.com/
+        // 2. Click "Get API key" and create a new key.
+        // 3. Copy the key and paste it between the quotes below.
+        const GEMINI_API_KEY = "AIzaSyAG5C2qy8ieVfyUuPQwfeP9qNiy0NHSCm0";
 
         // --- GLOBAL VARIABLES & CONFIG ---
         const firebaseConfig = {
@@ -245,11 +251,24 @@
         const authErrorBanner = document.getElementById('auth-error-banner');
 
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
+        async function main() {
+            try {
+                await enableIndexedDbPersistence(db);
+                console.log("Firestore persistence enabled.");
+            } catch (err) {
+                if (err.code == 'failed-precondition') {
+                    console.warn('Firestore persistence failed: Multiple tabs open?');
+                } else if (err.code == 'unimplemented') {
+                    console.warn('Firestore persistence not supported in this browser.');
+                }
+            }
+            
             handleAuthentication();
             setupEventListeners();
             updateUI(); // 立即更新一次畫面，確保第一站顯示
-        });
+        }
+        
+        document.addEventListener('DOMContentLoaded', main);
 
         async function handleAuthentication() {
             onAuthStateChanged(auth, async (user) => {
@@ -395,6 +414,11 @@
         async function handleSendMessage() {
             const userMessage = chatInput.value.trim();
             if (!userMessage) return;
+
+            if (!GEMINI_API_KEY || GEMINI_API_KEY === "") {
+                addMessageToChat('ai', '**AI 教練設定錯誤：**\n\n請開發者在 HTML 檔案的 `<script>` 區塊中，填入 `GEMINI_API_KEY`。');
+                return;
+            }
             
             addMessageToChat('user', userMessage);
             chatInput.value = '';
@@ -412,8 +436,7 @@
         }
         
         async function getAICoachResponse(userMessage) {
-            const apiKey = ""; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
 
             const studentContext = `
                 這是學生目前完成的作文草稿：
@@ -501,5 +524,4 @@
     </script>
 </body>
 </html>
-
 
