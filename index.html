@@ -248,6 +248,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             handleAuthentication();
             setupEventListeners();
+            updateUI(); // 立即更新一次畫面，確保第一站顯示
         });
 
         async function handleAuthentication() {
@@ -500,4 +501,5 @@
     </script>
 </body>
 </html>
+
 
