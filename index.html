@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>談合作・AI寫作探險家</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/showdown/dist/showdown.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .step-indicator {
+            transition: all 0.3s ease;
+        }
+        .chat-bubble-user {
+            background-color: #d1fae5; /* A light green for user */
+        }
+        .chat-bubble-ai {
+            background-color: #e0f2fe; /* A light blue for AI */
+        }
+        .prose img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+        }
+        .prose h1, .prose h2, .prose h3 {
+            font-weight: 700;
+        }
+        /* Custom scrollbar for chat */
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 3px;
+        }
+        .chat-container::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+    <div id="auth-error-banner" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+        <p class="font-bold">Firebase 設定錯誤</p>
+        <p>「匿名登入」功能尚未啟用。請前往您的 Firebase 專案 -> Authentication -> Sign-in method，並啟用「匿名」登入方式，然後重新整理此頁面。</p>
+    </div>
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-sky-700">談合作・AI寫作探險家</h1>
+            <p class="text-slate-500 mt-2">跟著AI教練，一步步完成你的議論文大作！</p>
+        </header>
+
+        <!-- Stepper Navigation -->
+        <div id="stepper" class="flex items-center justify-between mb-8 p-4 bg-white rounded-xl shadow-md">
+            <!-- Stepper items will be injected here by JS -->
+        </div>
+
+        <main id="app-container" class="bg-white p-6 md:p-8 rounded-xl shadow-lg min-h-[500px]">
+            <!-- Step Content -->
+            <div id="steps-container">
+                <!-- Step 1: Establish the Thesis -->
+                <div class="step" data-step="1">
+                    <h2 class="text-2xl font-bold text-sky-600 mb-4">第一站：尋找文章的心臟——確立論點</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="font-semibold block mb-2 text-lg">在你心中，「合作」是什麼樣子？</label>
+                            <p class="text-sm text-slate-500 mb-2">試著用你自己的話說說看合作的意思，以及它的重要性。</p>
+                            <textarea id="s1_meaning" class="w-full p-3 border rounded-lg h-28 bg-slate-50 focus:ring-2 focus:ring-sky-400" placeholder="我覺得合作就是..."></textarea>
+                        </div>
+                        <div>
+                            <label class="font-semibold block mb-2 text-lg">借助巨人的肩膀：尋找一句最有感覺的名言佳句</label>
+                            <div class="text-sm text-slate-600 bg-slate-100 p-3 rounded-lg">
+                                <p><strong>參考選項：</strong></p>
+                                <ul class="list-disc list-inside mt-1">
+                                    <li>單絲不成線，獨木不成林。</li>
+                                    <li>三個臭皮匠，勝過諸葛亮。</li>
+                                    <li>一個人走得快，一群人走得遠。</li>
+                                    <li>才能，可以讓你贏得遊戲；但團隊合作及聰明才智，能讓你贏下冠軍。 ——麥可·喬丹</li>
+                                </ul>
+                            </div>
+                            <textarea id="s1_quote" class="w-full mt-2 p-3 border rounded-lg h-28 bg-slate-50 focus:ring-2 focus:ring-sky-400" placeholder="我最喜歡的名言是... 因為..."></textarea>
+                        </div>
+                        <div>
+                            <label class="font-semibold block mb-2 text-lg">打造你的專屬論點！</label>
+                            <p class="text-sm text-slate-500 mb-2">結合你的想法和名言，用一個完整的句子寫下你的核心論點。</p>
+                            <textarea id="s1_thesis" class="w-full p-3 border rounded-lg h-28 bg-slate-50 focus:ring-2 focus:ring-sky-400" placeholder="俗話說：「...」，我認為合作是..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Find Examples -->
+                <div class="step" data-step="2">
+                    <h2 class="text-2xl font-bold text-sky-600 mb-4">第二站：蒐集證據的寶庫——尋找例子</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="font-semibold block mb-2 text-lg">尋找「合作成功」的光明故事（正例）</label>
+                            <p class="text-sm text-slate-500 mb-2">想想看生活、歷史或自然界中，因為合作而成功的例子。(至少寫1個)</p>
+                            <textarea id="s2_positive_example" class="w-full p-3 border rounded-lg h-40 bg-slate-50 focus:ring-2 focus:ring-sky-400" placeholder="例如：在自然界中，螞蟻們分工合作，才能搬運比自己重好幾倍的食物..."></textarea>
+                        </div>
+                        <div>
+                            <label class="font-semibold block mb-2 text-lg">尋找「不合作而失敗」的警惕故事（反例）</label>
+                             <p class="text-sm text-slate-500 mb-2">想想看有沒有因為不合作、自私而導致失敗的故事？</p>
+                            <textarea id="s2_negative_example" class="w-full p-3 border rounded-lg h-40 bg-slate-50 focus:ring-2 focus:ring-sky-400" placeholder="例如：我聽過一個「三個和尚沒水喝」的故事，就是因為..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Propose Methods -->
+                <div class="step" data-step="3">
+                    <h2 class="text-2xl font-bold text-sky-600 mb-4">第三站：通往合作的橋樑——提出方法</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="font-semibold block mb-2 text-lg">我的合作三步驟</label>
+                            <p class="text-sm text-slate-500 mb-2">如果要達成良好的合作，你覺得可以分成哪幾個步驟？試著用「首先」、「其次」、「最後」來整理你的想法。</p>
+                            <textarea id="s3_methods" class="w-full p-3 border rounded-lg h-60 bg-slate-50 focus:ring-2 focus:ring-sky-400" placeholder="首先，我認為要先確立大家共同的目標...&#10;其次，...&#10;最後，..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Write the Conclusion -->
+                <div class="step" data-step="4">
+                    <h2 class="text-2xl font-bold text-sky-600 mb-4">第四站：畫下完美的句點——寫下結論</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="font-semibold block mb-2 text-lg">總結你的看法</label>
+                             <p class="text-sm text-slate-500 mb-2">綜合以上所有的想法，再次強調合作的重要性，並用一句優美的句子來總結。</p>
+                            <textarea id="s4_conclusion" class="w-full p-3 border rounded-lg h-40 bg-slate-50 focus:ring-2 focus:ring-sky-400" placeholder="總而言之，合作是...。就像「彩虹之美，在多色共存；人生之美，在多人共榮。」..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Step 5: Writing Map -->
+                <div class="step" data-step="5">
+                    <h2 class="text-2xl font-bold text-sky-600 mb-4">第五站：我的寫作地圖（大綱）</h2>
+                    <p class="mb-4 text-slate-600">恭喜你！這是根據你前面填寫的內容，自動產生的作文大綱，你可以直接參考這份地圖開始寫作囉！</p>
+                    <div id="outline-display" class="space-y-4 p-4 border rounded-lg bg-slate-50">
+                        <!-- Outline will be generated here -->
+                    </div>
+                </div>
+
+                <!-- Step 6: AI Coach -->
+                <div class="step" data-step="6">
+                    <h2 class="text-2xl font-bold text-sky-600 mb-4">最終站：AI 寫作教練</h2>
+                    <p class="mb-4 text-slate-600">在寫作過程中遇到任何問題嗎？隨時都可以問你的AI教練！例如，你可以問：「我的開頭可以怎麼寫得更吸引人？」或「請幫我看看我的例子夠不夠清楚？」</p>
+                    <div class="flex flex-col h-[400px] border rounded-lg bg-slate-50">
+                        <div id="chat-container" class="chat-container flex-1 p-4 overflow-y-auto space-y-4">
+                            <!-- Chat messages will appear here -->
+                            <div class="p-3 rounded-lg max-w-lg chat-bubble-ai">
+                                <p class="text-sm">你好！我是你的AI寫作教練。準備好我們一起完成這篇文章了嗎？有任何問題隨時問我喔！</p>
+                            </div>
+                        </div>
+                        <div class="p-2 border-t flex items-center bg-white">
+                            <input type="text" id="chat-input" class="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-sky-400" placeholder="在這裡輸入你的問題...">
+                            <button id="send-btn" class="ml-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:bg-slate-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div id="navigation-buttons" class="flex justify-between mt-8">
+                <button id="prev-btn" class="px-6 py-2 bg-slate-300 text-slate-700 rounded-lg hover:bg-slate-400 disabled:opacity-50">上一站</button>
+                <button id="next-btn" class="px-6 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700">下一站</button>
+            </div>
+        </main>
+        
+        <footer class="text-center mt-8 text-sm text-slate-400">
+             <p>您的寫作進度會自動儲存。UserID: <span id="user-id-display" class="font-mono"></span></p>
+        </footer>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL VARIABLES & CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBH_2XGYiRueUQNT0R8tiiYAPu5gHEFwYM",
+            authDomain: "aig6-19d9f.firebaseapp.com",
+            projectId: "aig6-19d9f",
+            storageBucket: "aig6-19d9f.firebasestorage.app",
+            messagingSenderId: "548411651853",
+            appId: "1:548411651853:web:2ab7835e678b7883072244",
+            measurementId: "G-NYX9WZYP3G"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-cooperation-app';
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userId = null;
+        let dbRef = null;
+        let unsubscribe = null; // To detach the onSnapshot listener
+
+        const steps = [
+            { id: 1, title: '確立論點' },
+            { id: 2, title: '尋找例子' },
+            { id: 3, title: '提出方法' },
+            { id: 4, title: '寫下結論' },
+            { id: 5, title: '寫作地圖' },
+            { id: 6, title: 'AI 教練' },
+        ];
+        let currentStep = 1;
+        
+        const state = {
+            s1_meaning: '',
+            s1_quote: '',
+            s1_thesis: '',
+            s2_positive_example: '',
+            s2_negative_example: '',
+            s3_methods: '',
+            s4_conclusion: '',
+            chatHistory: []
+        };
+        const showdownConverter = new showdown.Converter();
+
+
+        // --- UI ELEMENTS ---
+        const stepperContainer = document.getElementById('stepper');
+        const stepsContainer = document.getElementById('steps-container');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const outlineDisplay = document.getElementById('outline-display');
+        const chatContainer = document.getElementById('chat-container');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const authErrorBanner = document.getElementById('auth-error-banner');
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            handleAuthentication();
+            setupEventListeners();
+        });
+
+        async function handleAuthentication() {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    authErrorBanner.classList.add('hidden'); // Success, so hide banner
+                    userId = user.uid;
+                    userIdDisplay.textContent = userId;
+                    dbRef = doc(db, `artifacts/${appId}/users/${userId}/essayData/progress`);
+                    await loadData();
+                    updateUI();
+                } else {
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error("Authentication failed:", error);
+                        if (error.code === 'auth/configuration-not-found') {
+                            authErrorBanner.classList.remove('hidden');
+                        }
+                        // Disable app functionality if auth fails
+                        document.getElementById('app-container').innerHTML = '<p class="text-center text-red-500 font-semibold">無法連接到資料庫，請依照上方提示修正設定後，重新整理頁面。</p>';
+                        document.getElementById('navigation-buttons').style.display = 'none';
+                        document.getElementById('stepper').style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            prevBtn.addEventListener('click', () => changeStep(-1));
+            nextBtn.addEventListener('click', () => changeStep(1));
+            sendBtn.addEventListener('click', handleSendMessage);
+            chatInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') handleSendMessage();
+            });
+
+            // Auto-save on input change
+            document.querySelectorAll('textarea').forEach(textarea => {
+                textarea.addEventListener('input', (e) => {
+                    state[e.target.id] = e.target.value;
+                    saveData();
+                });
+            });
+        }
+
+        // --- DATA HANDLING (FIRESTORE) ---
+        async function saveData() {
+            if (!dbRef) return;
+            try {
+                await setDoc(dbRef, state);
+            } catch (error) {
+                console.error("Error saving data: ", error);
+            }
+        }
+        
+        async function loadData() {
+            if (!dbRef) return;
+            try {
+                const docSnap = await getDoc(dbRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    Object.assign(state, data);
+                    // Populate UI from loaded state
+                    for (const key in state) {
+                        const element = document.getElementById(key);
+                        if (element && typeof state[key] === 'string') {
+                            element.value = state[key];
+                        }
+                    }
+                    renderChatHistory();
+                } else {
+                    // If no data, initialize with empty state
+                    await saveData(); 
+                }
+            } catch (error) {
+                console.error("Error loading data: ", error);
+            }
+        }
+
+
+        // --- UI LOGIC ---
+        function changeStep(direction) {
+            const newStep = currentStep + direction;
+            if (newStep >= 1 && newStep <= steps.length) {
+                currentStep = newStep;
+                updateUI();
+            }
+        }
+        
+        function updateUI() {
+            // Update Stepper
+            stepperContainer.innerHTML = steps.map(step => `
+                <div class="flex-1 text-center">
+                    <div class="step-indicator w-8 h-8 mx-auto rounded-full flex items-center justify-center ${step.id === currentStep ? 'bg-sky-600 text-white' : (step.id < currentStep ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-500')}">
+                        ${step.id < currentStep ? '✓' : step.id}
+                    </div>
+                    <p class="text-xs mt-1 ${step.id === currentStep ? 'font-bold text-sky-600' : 'text-slate-500'}">${step.title}</p>
+                </div>
+                ${step.id < steps.length ? `<div class="flex-1 h-1 ${step.id < currentStep ? 'bg-green-500' : 'bg-slate-200'}"></div>` : ''}
+            `).join('');
+
+            // Show/Hide Step Content
+            document.querySelectorAll('.step').forEach(el => {
+                el.classList.toggle('active', parseInt(el.dataset.step) === currentStep);
+            });
+
+            // Update Navigation Buttons
+            prevBtn.disabled = currentStep === 1;
+            nextBtn.textContent = currentStep === steps.length ? '完成探險' : '下一站';
+            nextBtn.disabled = currentStep === steps.length;
+            
+            // Special logic for outline step
+            if (currentStep === 5) {
+                generateOutline();
+            }
+        }
+        
+        function generateOutline() {
+             outlineDisplay.innerHTML = `
+                <div class="mb-3">
+                    <h3 class="font-bold text-lg">第一段：提出論點</h3>
+                    <p class="pl-4 text-slate-700">${state.s1_thesis || "（尚未填寫）"}</p>
+                </div>
+                <div class="mb-3">
+                    <h3 class="font-bold text-lg">第二段：正面例子</h3>
+                    <p class="pl-4 text-slate-700">${state.s2_positive_example || "（尚未填寫）"}</p>
+                </div>
+                 <div class="mb-3">
+                    <h3 class="font-bold text-lg">第三段：反面例子</h3>
+                    <p class="pl-4 text-slate-700">${state.s2_negative_example || "（尚未填寫）"}</p>
+                </div>
+                <div class="mb-3">
+                    <h3 class="font-bold text-lg">第四段：提出方法</h3>
+                    <p class="pl-4 text-slate-700">${state.s3_methods || "（尚未填寫）"}</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg">第五段：結論</h3>
+                    <p class="pl-4 text-slate-700">${state.s4_conclusion || "（尚未填寫）"}</p>
+                </div>
+            `;
+        }
+
+        // --- CHAT & GEMINI API LOGIC ---
+        async function handleSendMessage() {
+            const userMessage = chatInput.value.trim();
+            if (!userMessage) return;
+            
+            addMessageToChat('user', userMessage);
+            chatInput.value = '';
+            
+            setLoading(true);
+
+            try {
+                await getAICoachResponse(userMessage);
+            } catch (error) {
+                console.error("Error getting AI response:", error);
+                addMessageToChat('ai', "抱歉，我好像遇到一點問題，請稍後再試一次。");
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        async function getAICoachResponse(userMessage) {
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const studentContext = `
+                這是學生目前完成的作文草稿：
+                - 論點: ${state.s1_thesis || '未定'}
+                - 正面例子: ${state.s2_positive_example || '未定'}
+                - 反面例子: ${state.s2_negative_example || '未定'}
+                - 方法: ${state.s3_methods || '未定'}
+                - 結論: ${state.s4_conclusion || '未定'}
+            `;
+            
+            const systemPrompt = `
+                你是一位親切、有耐心且充滿鼓勵的國小六年級作文老師，名字是「AI寫作教練」。
+                你的任務是引導學生完成一篇關於「談合作」的議論文。
+                規則：
+                1. 絕對不要直接給學生答案或幫他寫句子。
+                2. 使用提問、引導和鼓勵的方式幫助他思考。
+                3. 用詞簡單、口語化，符合國小六年級學生的程度。
+                4. 你的回答必須是繁體中文。
+                5. 根據學生提供的草稿內容來回答他的問題，讓他感覺你在關注他的進度。
+                6. 你的回答要簡潔，一次不要說太多，避免學生混亂。
+                7. 使用 Markdown 格式化你的回答，讓內容更易讀。
+            `;
+
+            const payload = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{ text: `這是學生的問題： "${userMessage}"\n\n${studentContext}` }]
+                    }
+                ],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+            
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+
+            const result = await response.json();
+            const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text || "我需要再想一下...";
+            
+            addMessageToChat('ai', aiText);
+        }
+
+        function addMessageToChat(role, text) {
+            state.chatHistory.push({ role, text });
+            saveData();
+            renderNewMessage(role, text);
+        }
+
+        function renderNewMessage(role, text) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `p-3 rounded-lg max-w-lg text-sm ${role === 'user' ? 'chat-bubble-user self-end' : 'chat-bubble-ai self-start prose prose-sm'}`;
+            messageEl.innerHTML = showdownConverter.makeHtml(text);
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'w-full flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
+            wrapper.appendChild(messageEl);
+
+            chatContainer.appendChild(wrapper);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function renderChatHistory() {
+            chatContainer.innerHTML = ''; // Clear existing
+            state.chatHistory.forEach(msg => renderNewMessage(msg.role, msg.text));
+        }
+
+        function setLoading(isLoading) {
+            sendBtn.disabled = isLoading;
+            chatInput.disabled = isLoading;
+            if (isLoading) {
+                sendBtn.innerHTML = `<div class="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>`;
+            } else {
+                sendBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+            }
+        }
+    </script>
+</body>
+</html>
+
